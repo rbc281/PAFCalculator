@@ -119,11 +119,6 @@
     font-style: normal;
   }
 
-  .warning {
-    color: #c00000;
-    font-weight: bold;
-  }
-
   @media (max-width: 700px) {
     th, td, input {
       font-size: 13px;
@@ -166,7 +161,7 @@
     <tr>
       <td>Project Total Cost</td>
       <td class="yellow">
-        <input id="projectTotal" type="number" min="0" step="0.01" value="1" oninput="calculate()" />
+        <input id="projectTotal" type="number" min="0" step="0.01" value="0" oninput="calculate()" />
       </td>
       <td>&lt;-- Fill in this number</td>
     </tr>
@@ -174,7 +169,7 @@
     <tr>
       <td>Customer Paying Out of Pocket</td>
       <td class="yellow">
-        <input id="outOfPocket" type="number" min="0" step="0.01" value="1" oninput="calculate()" />
+        <input id="outOfPocket" type="number" min="0" step="0.01" value="0" oninput="calculate()" />
       </td>
       <td>&lt;-- Fill in this number</td>
     </tr>
@@ -260,10 +255,11 @@ function toCents(value) {
 }
 
 function formatMoney(cents) {
-  if (cents === 0) return "$0";
   return (cents / 100).toLocaleString("en-US", {
     style: "currency",
-    currency: "USD"
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   });
 }
 
