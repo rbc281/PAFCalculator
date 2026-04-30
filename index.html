@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PAF Calculator</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7f9;
+  padding: 24px;
+  color: #111;
+}
+
+.calculator {
+  max-width: 1050px;
+  margin: auto;
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.12);
+}
+
+.title {
+  background: #59ff59;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 8px;
+  border: 1px solid #111;
+}
+
+.instructions {
+  font-style: italic;
+  color: #4b5563;
+  margin: 12px 0;
+  line-height: 1.4;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 28px;
+}
+
+th, td {
+  border: 1px solid #111;
+  padding: 8px;
+  font-size: 14px;
+}
+
+th {
+  background: #c9ccd6;
+  font-weight: 700;
+  text-align: center;
+}
+
+.label {
+  font-weight: 500;
+}
+
+.input-cell {
+  background: #ffff00;
+  font-weight: 700;
+  text-align: center;
+}
+
+.input-cell input {
+  width: 100%;
+  border: none;
+  background: #ffff00;
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  outline: none;
+}
+
+.calculated {
+  background: #ddebf7;
+  text-align: center;
+}
+
+.money {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.note {
+  font-size: 13px;
+}
+
+.do-not-edit {
+  font-weight: 700;
+}
+
+.section-title {
+  background: #062f3a;
+  color: white;
+  font-weight: 700;
+  padding: 10px;
+  margin-top: 24px;
+  border: 1px solid #062f3a;
+}
+
+.matrix th, .matrix td {
+  text-align: center;
+}
+
+.matrix .row-label {
+  text-align: left;
+  background: #c9ccd6;
+  font-weight: 700;
+}
+
+.matrix .total-row td {
+  background: #c9ccd6;
+  font-style: italic;
+}
+
+.matrix .grand-total {
+  font-weight: 700;
+}
+
+.audit th {
+  background: #d9edf7;
+}
+
+.audit td {
+  border: none;
+  padding: 7px;
+}
+
+.audit .audit-label {
+  font-weight: 700;
+}
+
+.warning {
+  color: #b00020;
+  font-weight: 700;
+}
+
+.ok {
+  color: #111;
+  font-weight: 700;
+}
+
+@media print {
+  body {
+    background: white;
+    padding: 0;
+  }
+
+  .calculator {
+    box-shadow: none;
+    max-width: none;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="calculator">
+  <div class="title">PAF Calculator</div>
+
+  <div class="instructions">
+    Enter the project total and customer out-of-pocket amount.<br>
+    The schedule calculates initial deposit, financed deposit, and substantial completion payment.
+  </div>
+
+  <table>
+    <tr>
+      <th style="width:25%;">Input</th>
+      <th style="width:18%;">Value</th>
+      <th>Notes</th>
+    </tr>
+    <tr>
+      <td class="label">Project Total Cost</td>
+      <td class="input-cell">
+        <input id="projectTotal" type="number" min="0" step="0.01" value="15000" oninput="calculate()" />
+      </td>
+      <td class="note">&lt;-- Fill in this number</td>
+    </tr>
+    <tr>
+      <td class="label">Customer Paying Out of Pocket</td>
+      <td class="input-cell">
+        <input id="outOfPocket" type="number" min="0" step="0.01" value="800" oninput="calculate()" />
+      </td>
+      <td class="note">&lt;-- Fill in this number</td>
+    </tr>
+    <tr>
+      <td class="label calculated">Amount Financed</td>
+      <td class="calculated money" id="amountFinanced"></td>
+      <td class="note"><span class="do-not-edit">DON'T EDIT</span> - Project total less customer out-of-pocket amount</td>
+    </tr>
+    <tr>
+      <td class="label">Financing Used?</td>
+      <td class="money" id="financingUsed"></td>
+      <td class="note"><span class="do-not-edit">DON'T EDIT</span> - If financing amount is greater than $0</td>
+    </tr>
+    <tr>
+      <td class="label">Payment 1 - Initial Deposit</td>
+      <td class="money" id="payment1"></td>
+      <td class="note"><span class="do-not-edit">DON'T EDIT</span> - Limited to 10% of project total or $1,000, whichever is less</td>
+    </tr>
+    <tr>
+      <td class="label">Payment 2 - Deposit Balance</td>
+      <td class="money" id="payment2"></td>
+      <td class="note"><span class="do-not-edit">DON'T EDIT</span> - Payment 1 + Payment 2 must equal exactly 33% of project total</td>
+    </tr>
+    <tr>
+      <td class="label">Required Deposit Total - 33%</td>
+      <td class="money" id="requiredDeposit"></td>
+      <td class="note">Payment 1 + Payment 2 combined</td>
+    </tr>
+    <tr>
+      <td class="label">Substantial Completion - 67%</td>
+      <td class="money" id="substantialCompletion"></td>
+      <td class="note"><span class="do-not-edit">DON'T EDIT</span> - Remaining balance after the 33% deposit total</td>
+    </tr>
+    <tr>
+      <td class="label">Input Check</td>
+      <td class="money" id="inputCheck"></td>
+      <td class="note"><span class="do-not-edit">DON'T EDIT</span> - Fix inputs if this does not say OK</td>
+    </tr>
+  </table>
+
+  <table>
+    <tr>
+      <td>(1) Initial Deposit</td>
+      <td>At contract</td>
+      <td>Initial deposit is capped; out-of-pocket only</td>
+      <td class="money" id="detailOop1"></td>
+      <td class="money" id="detailFin1"></td>
+    </tr>
+    <tr>
+      <td>(2) Financed Deposit</td>
+      <td>After approval / before work</td>
+      <td>Bring Payment 1 + Payment 2 to exactly 33%; collect remaining out-of-pocket first, then lender funds</td>
+      <td class="money" id="detailOop2"></td>
+      <td class="money" id="detailFin2"></td>
+    </tr>
+    <tr>
+      <td>(3) Substantial Completion</td>
+      <td>After substantial completion</td>
+      <td>Collect remaining 67%; continue exhausting out-of-pocket before lender funds</td>
+      <td class="money" id="detailOop3"></td>
+      <td class="money" id="detailFin3"></td>
+    </tr>
+  </table>
+
+  <div class="section-title">Payment Schedule Matrix</div>
+
+  <table class="matrix">
+    <tr>
+      <th></th>
+      <th>Cash Deposit (1)</th>
+      <th>Financed Deposit (2)</th>
+      <th>Substantial Completion (3)</th>
+      <th>Total by Source</th>
+    </tr>
+    <tr>
+      <td class="row-label">Credit Card / Check</td>
+      <td id="matrixOop1"></td>
+      <td id="matrixOop2"></td>
+      <td id="matrixOop3"></td>
+      <td id="matrixOopTotal"></td>
+    </tr>
+    <tr>
+      <td class="row-label">Financing</td>
+      <td id="matrixFin1"></td>
+      <td id="matrixFin2"></td>
+      <td id="matrixFin3"></td>
+      <td id="matrixFinTotal"></td>
+    </tr>
+    <tr class="total-row">
+      <td class="row-label">Total by Stage</td>
+      <td id="matrixStage1"></td>
+      <td id="matrixStage2"></td>
+      <td id="matrixStage3"></td>
+      <td class="grand-total" id="matrixGrandTotal"></td>
+    </tr>
+  </table>
+
+  <table class="audit">
+    <tr>
+      <th>Audit Check</th>
+      <th>Result</th>
+      <th>Target / Rule</th>
+      <th>How to Use</th>
+    </tr>
+    <tr>
+      <td class="audit-label">Total Payments</td>
+      <td id="auditTotalPayments"></td>
+      <td>Must equal project total</td>
+      <td>1. Enter project total above.</td>
+    </tr>
+    <tr>
+      <td class="audit-label">Total Out of Pocket Collected</td>
+      <td id="auditOopCollected"></td>
+      <td>Must equal customer out-of-pocket input</td>
+      <td>2. Enter customer out-of-pocket amount above.</td>
+    </tr>
+    <tr>
+      <td class="audit-label">Total Financed Collected</td>
+      <td id="auditFinCollected"></td>
+      <td>Must equal calculated financing amount</td>
+      <td>3. Review the matrix to see credit card/check vs financing by stage.</td>
+    </tr>
+    <tr>
+      <td class="audit-label">Payment 1 + Payment 2</td>
+      <td id="auditDepositTotal"></td>
+      <td>Must equal required 33% deposit total</td>
+      <td>4. Payment 1 and Payment 2 combined are shown above.</td>
+    </tr>
+    <tr>
+      <td class="audit-label">Variance to 33% Rule</td>
+      <td id="auditVariance"></td>
+      <td>Must equal $0.00</td>
+      <td>Note: substantial completion equals the remaining project balance.</td>
+    </tr>
+    <tr>
+      <td class="audit-label">Out of Pocket Exhausted First?</td>
+      <td id="auditOopFirst"></td>
+      <td>Must say YES</td>
+      <td>The matrix prioritizes credit card/check funds before lender funds.</td>
+    </tr>
+  </table>
+</div>
+
+<script>
+function cents(value) {
+  return Math.round((Number(value) || 0) * 100);
+}
+
+function dollars(valueInCents) {
+  return valueInCents / 100;
+}
+
+function money(valueInCents) {
+  return dollars(valueInCents).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD"
+  });
+}
+
+function set(id, value) {
+  document.getElementById(id).textContent = value;
+}
+
+function calculate() {
+  let total = cents(document.getElementById("projectTotal").value);
+  let oopInput = cents(document.getElementById("outOfPocket").value);
+
+  if (oopInput < 0) oopInput = 0;
+  if (total < 0) total = 0;
+  if (oopInput > total) oopInput = total;
+
+  let amountFinanced = total - oopInput;
+  let financingUsed = amountFinanced > 0 ? "Yes" : "No";
+
+  let initialDepositCap = Math.min(Math.round(total * 0.10), 100000);
+  let payment1 = oopInput > 0 ? Math.min(oopInput, initialDepositCap) : 0;
+
+  let requiredDeposit = Math.round(total * 0.33);
+  let payment2 = Math.max(requiredDeposit - payment1, 0);
+  let substantialCompletion = total - requiredDeposit;
+
+  let remainingOop = oopInput;
+
+  let oop1 = Math.min(remainingOop, payment1);
+  let fin1 = payment1 - oop1;
+  remainingOop -= oop1;
+
+  let oop2 = Math.min(remainingOop, payment2);
+  let fin2 = payment2 - oop2;
+  remainingOop -= oop2;
+
+  let oop3 = Math.min(remainingOop, substantialCompletion);
+  let fin3 = substantialCompletion - oop3;
+
+  let totalOop = oop1 + oop2 + oop3;
+  let totalFin = fin1 + fin2 + fin3;
+  let totalPayments = payment1 + payment2 + substantialCompletion;
+  let depositTotal = payment1 + payment2;
+  let variance = depositTotal - requiredDeposit;
+
+  set("amountFinanced", money(amountFinanced));
+  set("financingUsed", financingUsed);
+  set("payment1", money(payment1));
+  set("payment2", money(payment2));
+  set("requiredDeposit", money(requiredDeposit));
+  set("substantialCompletion", money(substantialCompletion));
+  set("inputCheck", total > 0 && oopInput <= total ? "OK" : "CHECK INPUTS");
+
+  set("detailOop1", money(oop1));
+  set("detailFin1", money(fin1));
+  set("detailOop2", money(oop2));
+  set("detailFin2", money(fin2));
+  set("detailOop3", money(oop3));
+  set("detailFin3", money(fin3));
+
+  set("matrixOop1", money(oop1));
+  set("matrixOop2", money(oop2));
+  set("matrixOop3", money(oop3));
+  set("matrixOopTotal", money(totalOop));
+
+  set("matrixFin1", money(fin1));
+  set("matrixFin2", money(fin2));
+  set("matrixFin3", money(fin3));
+  set("matrixFinTotal", money(totalFin));
+
+  set("matrixStage1", money(payment1));
+  set("matrixStage2", money(payment2));
+  set("matrixStage3", money(substantialCompletion));
+  set("matrixGrandTotal", money(totalPayments));
+
+  set("auditTotalPayments", money(totalPayments));
+  set("auditOopCollected", money(totalOop));
+  set("auditFinCollected", money(totalFin));
+  set("auditDepositTotal", money(depositTotal));
+  set("auditVariance", money(variance));
+  set("auditOopFirst", "YES");
+}
+
+calculate();
+</script>
+
+</body>
+</html>
